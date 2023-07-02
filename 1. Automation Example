@@ -1,0 +1,162 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 68,
+   "id": "11323478",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import glob as glob\n",
+    "import xlsxwriter"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 69,
+   "id": "867bc369",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "f = glob.glob(f'D:\\Documents and Settings\\harris ch lee\\Downloads\\Data *.xlsx')[-1]\n",
+    "df = pd.read_excel(f,sheet_name=\"All\")\n",
+    "date = f[-16:-6].replace(\"-\",\"/\")\n",
+    "filedate = f[-16:-6].replace(\"-\",\"\")\n",
+    "#define the latest date based on file date#"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 70,
+   "id": "8429a4b1",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_trimmed = df.iloc[:,0:37] \n",
+    "df_trimmed.insert(0,'Date',date)\n",
+    "#trim the dataset to the necessary columns#"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 71,
+   "id": "608a5267",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_trimmed[\"Amount\"] = df_trimmed.iloc[:,17] * df_trimmed[\"QTY\"] * 1000\n",
+    "df_trimmed[\"Amount(USD)\"] = df_trimmed[\"Value\"] * 1000\n",
+    "df_trimmed[\"Quantity\"] = df_trimmed[\"QTY\"] * 1000\n",
+    "df_trimmed[\"Group (Fcst)\"] = None\n",
+    "df_trimmed[\"Column1\"] = df_trimmed[\"Amount\"] - df_trimmed[\"Amount(USD)\"]  \n",
+    "#create calculated column#\n",
+    "df_trimmed[\"Region\"] = df_trimmed[\"Region\"].fillna(\"NA\")\n",
+    "file_name = r'D:\\Documents and Settings\\harris ch lee\\Downloads\\Production' + filedate + '.xlsx'\n",
+    "sheet_name = 'Sheet1'\n",
+    "df_trimmed.to_excel(file_name,sheet_name=sheet_name,index=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 72,
+   "id": "204b0e2d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "file_name = r'D:\\HKG\\Folder\\reports\\Production' + filedate + '.xlsx'\n",
+    "sheet_name = 'OHD'\n",
+    "df_trimmed.to_excel(file_name,sheet_name=sheet_name,index=False)\n",
+    "writer = pd.ExcelWriter(file_name, engine='xlsxwriter')\n",
+    "workbook = writer.book\n",
+    "df_trimmed.to_excel(writer, sheet_name=sheet_name, startrow = 0, index = False)\n",
+    "worksheet = writer.sheets[sheet_name]\n",
+    "#import xlsxwriter and define necessary variables"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 73,
+   "id": "f0193466",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "(max_row, max_col) = df_trimmed.shape\n",
+    "column_settings = []\n",
+    "New_Headers=['Date', 'ORG', 'SCHEDULER', 'SUB_APP', 'COORDINATOR',\n",
+    "       'CLASS', 'INVENTORY', 'NAME', 'NO', 'Region',\n",
+    "       'SHIP_TO_SITE', 'SHIP_TO_LOCATION', 'ORIGINATION', 'ORDER',\n",
+    "       'DESIGNATOR', 'ITEM', 'FLOOR',\n",
+    "       'Price USD', 'ITEM_STATUS', 'ITEM_TYPE', 'DESCRIPTION',\n",
+    "       'PROJECT', 'PROJECT_LAST_UPDATE_DATE', 'CAT_SEGMENT1', 'CAT_SEGMENT2',\n",
+    "       'CAT_SEGMENT3', 'PROMISE_DATE', 'MTH SCHEDULE', 'Column2', '544 MTH',\n",
+    "       'BU', 'SCH_QTY', 'ORIGINAL_QUANTITY', 'RESV_QTY', 'OMC AD',\n",
+    "       \"QTY\", \"Value\", 'Currency_Code', 'Amount',\n",
+    "       'Amount(USD)', 'Quantity', 'Group', 'Column1']\n",
+    "for header in New_Headers:\n",
+    "     column_settings.append({'header': header})\n",
+    "#add headers to the worksheet"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 74,
+   "id": "38d1d5cb",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0"
+      ]
+     },
+     "execution_count": 74,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "worksheet.add_table(0, 0, max_row, max_col - 1,{'style':None,'columns': column_settings})\n",
+    "#create table to the current dataset\n",
+    "font_format = workbook.add_format()\n",
+    "font_format.set_font_size(8)\n",
+    "font_format.set_font_name('Arial')\n",
+    "worksheet.set_column(0,42,15,font_format)\n",
+    "currency_format=  workbook.add_format({'num_format':'_(* #,##0_);_(* (#,##0);_(* \"-\"??_);_(@_)'})\n",
+    "worksheet.set_column(38,42,18,currency_format)\n",
+    "#format number format and font size and font"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 75,
+   "id": "33bc3975",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "writer.close()"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.13"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
